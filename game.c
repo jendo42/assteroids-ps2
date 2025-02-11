@@ -1,12 +1,4 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <libvux.h>
-#include <math.h>
-
-#include "system.h"
-#include "resources.h"
-#include "maths.h"
-
+#include "engine.h"
 #include "game.h"
 
 static float g_canvas[2];
@@ -22,6 +14,66 @@ static assteroid_t *g_bullet;
 static int g_score = 0;
 static int g_active = 0;
 static const float g_scale = 0.5f;
+
+#ifndef LOG_DEBUG
+#define LOG_DEBUG(x, ...)
+#endif // !LOG_DEBUG
+
+// resources
+static const VU_VECTOR g_rocketData[] = {
+	{ 0.0f, 1.0f, 0.0f, 1.0f },
+	{ 0.5f, -1.0f, 0.0f, 1.0f },
+	{ 0.0f, 0.0f, 0.0f, 1.0f },
+	{ -0.5f, -1.0f, 0.0f, 1.0f },
+	{ 0.0f, 1.0f, 0.0f, 1.0f }
+};
+
+static const VU_VECTOR g_squareData[] = {
+	{ -0.5f, -0.5f, 0.0f, 1.0f },
+	{ -0.5f, +0.5f, 0.0f, 1.0f },
+	{ +0.5f, +0.5f, 0.0f, 1.0f },
+	{ +0.5f, -0.5f, 0.0f, 1.0f },
+	{ -0.5f, -0.5f, 0.0f, 1.0f },
+};
+
+const mesh_t g_square = {
+	.data = &g_squareData[0],
+	.count = 5
+};
+
+const mesh_t g_rocket = {
+	.data = &g_rocketData[0],
+	.count = 5
+};
+
+const mesh_t g_line = {
+	.data = &g_rocketData[0],
+	.count = 2
+};
+
+const color_t g_color_black = {
+	.r = 0,
+	.g = 0,
+	.b = 0,
+	.a = 255,
+	.q = 1.0f
+};
+
+const color_t g_color_white = {
+	.r = 255,
+	.g = 255,
+	.b = 255,
+	.a = 255,
+	.q = 1.0f
+};
+
+const color_t g_color_red = {
+	.r = 255,
+	.g = 0,
+	.b = 0,
+	.a = 255,
+	.q = 1.0f
+};
 
 // entities
 static assteroid_t g_asteroids[256];
@@ -161,21 +213,10 @@ static void cleanupAsteroids()
 	}
 }
 
-void assRestartLevel()
+static void restartLevel()
 {
 	LOG_DEBUG("Restarting game");
 	g_score = 0;
-
-	float aspect = assGsTvAspectRatio();
-	g_canvas[0] = (float)assGsWidth() * aspect;
-	g_canvas[1] = (float)assGsHeight();
-	LOG_DEBUG("Projection canvas: %f x %f (%f)", g_canvas[0], g_canvas[1], aspect);
-
-	// setup transform
-	assOrthoProjRH(&g_proj, 0, g_canvas[0], 0, g_canvas[1], 0.0f, 1.0f);
-	Vu0CopyMatrix(&g_osd, &g_proj);
-	g_osd.m[0][0] *= 2.0f;
-	g_osd.m[1][1] *= 2.0f;
 
 	// cleanup entities
 	cleanupAsteroids();
@@ -272,10 +313,49 @@ static void spawnFragments(float scale, VU_VECTOR *position, VU_VECTOR *speed)
 	}
 }
 
+static void drawOsd(io_t *io)
+{
+	char buff[2048];
+	float vpool = (float)g_lastVertex / g_vertexPoolSize * 100.0f;
+	float epool = (float)g_active / g_assteroidsSize * 100.0f;
+	int siz = stbsp_snprintf(buff, sizeof(buff), "FPS: %.2f  VPOOL: %.1f%%  EPOOL: %.1f%%", io->fps, vpool, epool) + 1;
+	int siz2 = stbsp_snprintf(&buff[siz], sizeof(buff) - siz, "SCORE: %d", g_score);
+	VU_MATRIX osd = g_osd;
+	osd.m[0][0] *= 4.0f;
+	osd.m[1][1] *= 4.0f;
+	assGsDrawText(10.0f, g_canvas[1] * 0.5f - 10.0f, buff, &g_color_white, &g_osd);
+	assGsDrawText(10.0f, 30.0f, &buff[siz], &g_color_white, &g_osd);
+	switch (g_player->m_state) {
+		case ASS_Dead:
+			assGsDrawText(12.5, 35, "You DIED", &g_color_red, &osd);
+			break;
+		case ASS_Win:
+			assGsDrawText(15, 35, "You WIN", &g_color_white, &osd);
+			break;
+	}
+}
+
 void assGameUpdate(io_t *io)
 {
-	if (io->testPressed) {
-		assRestartLevel();
+	if (io->resize) {
+		io->resize = false;
+
+		// do this only if screen changed
+		float aspect = assGsTvAspectRatio();
+		g_canvas[0] = (float)assGsWidth() * aspect;
+		g_canvas[1] = (float)assGsHeight();
+		LOG_DEBUG("Projection canvas: %f x %f (%f)", g_canvas[0], g_canvas[1], aspect);
+
+		// setup transform
+		assOrthoProjRH(&g_proj, 0, g_canvas[0], 0, g_canvas[1], 0.0f, 1.0f);
+		Vu0CopyMatrix(&g_osd, &g_proj);
+		g_osd.m[0][0] *= 2.0f;
+		g_osd.m[1][1] *= 2.0f;
+	}
+
+	assGsClear(&g_color_black);
+	if (io->testPressed || !g_player) {
+		restartLevel();
 	}
 
 	float timeCoef = io->deltaTime;
@@ -321,7 +401,7 @@ void assGameUpdate(io_t *io)
 		}
 		if (io->throttle > 0.0f) {
 			float k = (1.0f - speed) * io->throttle;
-			g_player->m_acc.x = 0.0f    * k;
+			g_player->m_acc.x = 0.0f * k;
 			g_player->m_acc.y = 2000.0f * k;
 			assRotateVec2(&g_player->m_acc, g_player->m_angle);
 		} else if (speed > 0.0f) {
@@ -352,7 +432,7 @@ void assGameUpdate(io_t *io)
 	case ASS_Dead:
 	case ASS_Win:
 		if (io->startPressed) {
-			assRestartLevel();
+			restartLevel();
 		}
 		break;
 	}
@@ -498,26 +578,6 @@ void assGameUpdate(io_t *io)
 		x = 0.0f;
 		LOG_DEBUG("speed: %f; acc: %f; pos: %f,%f; angle: %f", assLengthVec2(&g_player->m_speed), assLengthVec2(&g_player->m_acc), g_player->m_position.x, g_player->m_position.y, g_player->m_angle);
 	}
-}
 
-void assGameDrawOsd(io_t *io)
-{
-	char buff[2048];
-	float vpool = (float)g_lastVertex / g_vertexPoolSize * 100.0f;
-	float epool = (float)g_active / g_assteroidsSize * 100.0f;
-	int siz = stbsp_snprintf(buff, sizeof(buff), "FPS: %.2f  VPOOL: %.1f%%  EPOOL: %.1f%%", io->fps, vpool, epool) + 1;
-	int siz2 = stbsp_snprintf(&buff[siz], sizeof(buff) - siz, "SCORE: %d", g_score);
-	VU_MATRIX osd = g_osd;
-	osd.m[0][0] *= 4.0f;
-	osd.m[1][1] *= 4.0f;
-	assGsDrawText(10.0f, g_canvas[1] * 0.5f - 10.0f, buff, &g_color_white, &g_osd);
-	assGsDrawText(10.0f, 30.0f, &buff[siz], &g_color_white, &g_osd);
-	switch (g_player->m_state) {
-		case ASS_Dead:
-			assGsDrawText(12.5, 35, "You DIED", &g_color_red, &osd);
-			break;
-		case ASS_Win:
-			assGsDrawText(15, 35, "You WIN", &g_color_white, &osd);
-			break;
-	}
+	drawOsd(io);
 }

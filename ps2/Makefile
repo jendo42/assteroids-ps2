@@ -1,9 +1,9 @@
 EE_BIN = assteroids.elf
 EE_CBIN = assteroids_comp.elf
-EE_OBJS = resources.o maths.o system.o render.o game.o main.o
+EE_OBJS = ../maths.o ../sprintf.o system.o render.o ../game.o main.o
 EE_LIBS = -ldebug -lpad -lgs -ldraw -lgraph -ldma -lpacket -lvux -lmath3d
-
-EE_OPTFLAGS += -std=c99 -Ofast -mload-store-pairs -Wno-missing-braces -Wno-unused-function -Wno-switch -Wno-unused-variable -Wno-unused-label -Wno-multichar
+EE_INCS += -I./ps2
+EE_OPTFLAGS += -I../ -std=c99 -Ofast -mload-store-pairs -Wno-missing-braces -Wno-unused-function -Wno-switch -Wno-unused-variable -Wno-unused-label -Wno-multichar
 
 all: $(EE_BIN) strip $(EE_CBIN)
 

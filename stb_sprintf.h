@@ -210,7 +210,8 @@ STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsnprintf)(char *buf, int count, char 
 STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(sprintf)(char *buf, char const *fmt, ...) STBSP__ATTRIBUTE_FORMAT(2,3);
 STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(snprintf)(char *buf, int count, char const *fmt, ...) STBSP__ATTRIBUTE_FORMAT(3,4);
 
-STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsprintfcb)(STBSP_SPRINTFCB *callback, void *user, char *buf, char const *fmt, va_list va);
+STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsprintfcb)(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* fmt, va_list va);
+STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(sprintfcb)(STBSP_SPRINTFCB *callback, void *user, char *buf, char const *fmt, ...);
 STBSP__PUBLICDEC void STB_SPRINTF_DECORATE(set_separators)(char comma, char period);
 
 #endif // STB_SPRINTF_H_INCLUDE
@@ -344,6 +345,16 @@ static STBSP__ASAN stbsp__uint32 stbsp__strlen_limited(char const *s, stbsp__uin
    }
 
    return (stbsp__uint32)(sn - s);
+}
+
+STBSP__PUBLICDEF int STB_SPRINTF_DECORATE(sprintfcb)(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* fmt, ...)
+{
+    int ret;
+    va_list va;
+    va_start(va, fmt);
+    ret = STB_SPRINTF_DECORATE(vsprintfcb)(callback, user, buf, fmt, va);
+    va_end(va);
+    return ret;
 }
 
 STBSP__PUBLICDEF int STB_SPRINTF_DECORATE(vsprintfcb)(STBSP_SPRINTFCB *callback, void *user, char *buf, char const *fmt, va_list va)

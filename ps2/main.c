@@ -6,10 +6,8 @@
 #include <kernel.h>
 #include <graph.h>
 
-#include "system.h"
+#include "engine.h"
 #include "game.h"
-#include "resources.h"
-#include "maths.h"
 
 static volatile uint32_t vblank;
 
@@ -23,7 +21,7 @@ int main(int argc, char **argv)
 {
 	StartTimerSystemTime();
 	srand(time(NULL));
-	
+
 	bool interlaced = true;
 	bool ntsc = true;
 	bool debug = true;
@@ -52,7 +50,6 @@ int main(int argc, char **argv)
 
 	assGsInit(interlaced, ntsc);
 	assInputInit();
-	assRestartLevel();
 
 	graph_add_vsync_handler(vblank_handler);
 
@@ -62,6 +59,7 @@ int main(int argc, char **argv)
 	float tick = 0.0f;
 	uint32_t last_vblank = 0;
 	memset(&io, 0, sizeof(io));
+	io.resize = true;
 	while (1) {
 		assUpdateIO(&io);
 		if (io.exit) {
@@ -69,10 +67,7 @@ int main(int argc, char **argv)
 		}
 
 		assGsBeginFrame();
-		assGsClear(&g_color_black);
-
 		assGameUpdate(&io);
-		assGameDrawOsd(&io);
 
 		uint32_t qwords = assGsEndFrame();
 
@@ -87,7 +82,7 @@ int main(int argc, char **argv)
 		assGsWait();
 		assGsExecute();
 	}
-	
+
 	LOG_DEBUG("Main loop exit");
 	return 0;
 }

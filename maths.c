@@ -1,6 +1,5 @@
 #include <stdlib.h>
-#include <math.h>
-
+#include <libvux.h>
 #include "maths.h"
 
 float assRand()
@@ -63,18 +62,6 @@ void assOrthoProjRH(VU_MATRIX *output, float left, float right, float top, float
 	output->m[3][0] = -(right + left) / (right - left);
 	output->m[3][1] = -(top + bottom) / (top - bottom);
 	output->m[3][2] = -(far + near) / (far - near);
-}
-
-void assToFixed(xyz_t *output, float center_x, float center_y, float origin_x, float origin_y, VU_VECTOR *input)
-{
-	// assume that input vector is in range [-1, 1]
-	// so we move it to the [0, 2] (by adding +1) and multiply it by half-screen size so we get [0, screenSize] in fixed point
-	// last step is to move the coordinates to the origin of the screen (GS settings)
-
-	u32 max_z = -1;
-	output->x = ((input->x + 1.0f) * ftoi4(center_x)) + ftoi4(origin_x);
-	output->y = ((input->y + 1.0f) * ftoi4(center_y)) + ftoi4(origin_y);
-	output->z = input->z * max_z;
 }
 
 float assTestCircle(VU_VECTOR *a, VU_VECTOR *b)

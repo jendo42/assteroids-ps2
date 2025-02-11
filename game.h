@@ -1,10 +1,8 @@
 #pragma once
-#include <draw_types.h>
-
-#include "render.h"
 
 typedef enum assteroid_state assteroid_state_t;
 typedef struct assteroid assteroid_t;
+typedef struct io io_t;
 
 enum assteroid_state
 {
@@ -30,6 +28,31 @@ struct assteroid
 	bool m_fragment;
 };
 
-void assRestartLevel();
+struct io
+{
+	float time;
+	float deltaTime;
+	float fps;
+
+	float dirx;
+	float diry;
+	float throttle;
+
+	bool left;
+	bool right;
+	bool fire;
+
+	bool exit;
+	bool test;
+
+	bool startPressed;
+	bool firePressed;
+	bool testPressed;
+
+	int width;
+	int height;
+	bool resize;
+	bool resize_image;
+};
+
 void assGameUpdate(io_t *io);
-void assGameDrawOsd(io_t *io);

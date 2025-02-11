@@ -1,6 +1,5 @@
 #pragma once
-#include <libvux.h>
-#include <draw_types.h>
+#include <math.h>
 
 #define M_E 2.71828182845904523536
 #define M_LOG2E 1.44269504088896340736
@@ -25,12 +24,4 @@ void assNormalizeVec2(VU_VECTOR *vect);
 void assRotateVec2(VU_VECTOR *vec, float angle);
 float assClamp(float x, float min, float max);
 void assOrthoProjRH(VU_MATRIX *output, float left, float right, float top, float bottom, float near, float far);
-
-/// @brief Converts VU_VECTOR into GS fixed point format (xyz_t)
-/// @param output - destination fixed point vector
-/// @param center_x - center of the screen X (width / 2)
-/// @param center_y - center of the screen Y (height / 2)
-/// @param input - source float vector
-void assToFixed(xyz_t *output, float center_x, float center_y, float origin_x, float origin_y, VU_VECTOR *input);
-
 float assTestCircle(VU_VECTOR *a, VU_VECTOR *b);
