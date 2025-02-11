@@ -1,12 +1,9 @@
 {
     "C_Cpp.default.includePath": [
-        "${env:PS2SDK}\\common\\include",
-        "${env:PS2SDK}\\ee\\include",
-        "${env:PS2SDK}\\..\\ee\\mips64r5900el-ps2-elf\\include"
+        "${workspaceFolder}\\**",
     ],
     "C_Cpp.default.defines": [
-        "_EE=",
-        "__attribute__(x)="
+        "_DEBUG=1"
     ],
     "files.associations": {
         "libpad.h": "c",
@@ -52,7 +49,10 @@
         "string": "c",
         "string_view": "c",
         "resources.h": "c",
-        "maths.h": "c"
+        "maths.h": "c",
+        "sifcmd.h": "c",
+        "cstdint": "c",
+        "cstdarg": "c"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
 }
